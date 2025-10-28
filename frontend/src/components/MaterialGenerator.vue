@@ -10,14 +10,21 @@
       <!-- Titre avec animation -->
       <div class="title-container">
         <h1 class="magic-title">
-          <span class="title-text">Material generator</span>
+          <span class="title-text">Material Generator</span>
           <span class="title-glow"></span>
         </h1>
-        <p class="subtitle">Transformez vos URLs YouTube </p>
+        <p class="subtitle">Transformez vos URLs YouTube en listes de matériel</p>
       </div>
 
       <!-- Carte principale -->
       <div class="card futuristic-card">
+        <!-- Message d'erreur -->
+        <div v-if="error" class="error-message">
+          <div class="error-icon">⚠️</div>
+          <div class="error-text">{{ error }}</div>
+          <button @click="clearError" class="error-close">×</button>
+        </div>
+
         <!-- Input avec animation -->
         <div class="input-container">
           <div class="input-wrapper">
@@ -25,22 +32,28 @@
                 v-model="youtubeUrl"
                 @focus="animateInput = true"
                 @blur="animateInput = false"
+                @keyup.enter="generateList"
                 type="text"
                 placeholder="Collez votre URL YouTube ici..."
                 class="magic-input"
-                :class="{ 'input-focused': animateInput }"
+                :class="{ 'input-focused': animateInput, 'input-error': error }"
             />
             <div class="input-glow"></div>
             <div class="input-particles"></div>
           </div>
+          <div v-if="!isValidUrl && youtubeUrl" class="url-warning">
+            ⚠️ URL YouTube non valide
+          </div>
         </div>
 
-        <!-- Bouton avec effet magique -->
         <button
             @click="generateList"
-            :disabled="loading || !youtubeUrl"
+            :disabled="loading || !youtubeUrl || !isValidUrl"
             class="magic-button"
-            :class="{ 'button-loading': loading, 'button-pulse': !loading && youtubeUrl }"
+            :class="{
+            'button-loading': loading,
+            'button-pulse': !loading && youtubeUrl && isValidUrl
+          }"
         >
           <span class="button-text">
             {{ loading ? 'Génération en cours...' : 'Générer la Liste' }}
@@ -59,13 +72,18 @@
             <div class="orb"></div>
             <div class="orb"></div>
             <div class="orb"></div>
-            <div class="loading-text">Analyse de la vidéo en cours...</div>
+            <div class="loading-text">{{ loadingMessage }}</div>
           </div>
         </div>
 
         <!-- Résultats -->
         <div v-if="results.length > 0" class="results-container">
-          <h3 class="results-title">Liste Générée :</h3>
+          <div class="results-header">
+            <h3 class="results-title">Liste Générée :</h3>
+            <button @click="clearResults" class="clear-button">
+              Effacer
+            </button>
+          </div>
           <div class="results-list">
             <div
                 v-for="(item, index) in results"
@@ -79,12 +97,30 @@
             </div>
           </div>
         </div>
+
+        <!-- Historique vide -->
+        <div v-if="!loading && results.length === 0 && history.length > 0" class="history-section">
+          <h4 class="history-title">Historique récent</h4>
+          <div class="history-list">
+            <div
+                v-for="(item, index) in history.slice(0, 3)"
+                :key="index"
+                class="history-item"
+                @click="loadFromHistory(item)"
+            >
+              <span class="history-url">{{ truncateUrl(item.url) }}</span>
+              <span class="history-time">{{ formatTime(item.timestamp) }}</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script>
+import { urlVideoService } from '@/services/urlVideoService';
+
 export default {
   name: 'App',
   data() {
@@ -92,30 +128,120 @@ export default {
       youtubeUrl: '',
       loading: false,
       animateInput: false,
-      results: []
+      error: null,
+      results: [],
+      history: [],
+      loadingStages: [
+        'Connexion à YouTube...',
+        'Extraction du contenu...',
+        'Analyse en cours...',
+        'Génération de la liste...'
+      ],
+      currentLoadingStage: 0
     }
+  },
+  computed: {
+    isValidUrl() {
+      const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/;
+      return youtubeRegex.test(this.youtubeUrl);
+    },
+    loadingMessage() {
+      return this.loadingStages[this.currentLoadingStage] || 'Traitement en cours...';
+    }
+  },
+  async mounted() {
+    this.loadHistory();
   },
   methods: {
     async generateList() {
-      if (!this.youtubeUrl) return;
+      if (!this.isValidUrl) {
+        this.error = "Veuillez entrer une URL YouTube valide";
+        return;
+      }
 
       this.loading = true;
+      this.error = null;
       this.results = [];
+      this.currentLoadingStage = 0;
 
-      // Simulation du traitement
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      const progressInterval = setInterval(() => {
+        if (this.currentLoadingStage < this.loadingStages.length - 1) {
+          this.currentLoadingStage++;
+        }
+      }, 800);
 
-      // Résultats simulés
-      this.results = [
-        'Introduction aux concepts magiques',
-        'Démonstration des pouvoirs',
-        'Exercices pratiques',
-        'Conseils avancés',
-        'Ressources supplémentaires',
-        'Communauté de sorciers modernes'
-      ];
+      try {
+        const response = await urlVideoService.generateList(this.youtubeUrl);
 
-      this.loading = false;
+        this.results = response.data?.items || response.items || [];
+
+        // Sauvegarder dans l'historique local
+        this.saveToHistory({
+          url: this.youtubeUrl,
+          results: this.results,
+          timestamp: new Date().toISOString()
+        });
+
+        // Feedback de succès
+        this.showSuccessMessage('Liste générée avec succès !');
+
+      } catch (err) {
+        console.error('Erreur lors de la génération:', err);
+        this.error = err.message || 'Une erreur est survenue lors de la génération de la liste';
+      } finally {
+        clearInterval(progressInterval);
+        this.loading = false;
+        this.currentLoadingStage = 0;
+      }
+    },
+
+    saveToHistory(item) {
+      this.history.unshift(item);
+      if (this.history.length > 10) {
+        this.history = this.history.slice(0, 10);
+      }
+      localStorage.setItem('youtubeHistory', JSON.stringify(this.history));
+    },
+
+    loadHistory() {
+      try {
+        const saved = localStorage.getItem('youtubeHistory');
+        if (saved) {
+          this.history = JSON.parse(saved);
+        }
+      } catch (err) {
+        console.error('Erreur lors du chargement de l\'historique:', err);
+      }
+    },
+
+    loadFromHistory(item) {
+      this.youtubeUrl = item.url;
+      this.results = item.results;
+      this.error = null;
+    },
+
+    clearError() {
+      this.error = null;
+    },
+
+    clearResults() {
+      this.results = [];
+    },
+
+    truncateUrl(url) {
+      if (url.length > 50) {
+        return url.substring(0, 47) + '...';
+      }
+      return url;
+    },
+
+    formatTime(timestamp) {
+      return new Date(timestamp).toLocaleTimeString('fr-FR');
+    },
+
+    showSuccessMessage(message) {
+      // Vous pourriez utiliser un toast library ici
+      console.log('✅', message);
     }
   }
 }
@@ -126,10 +252,6 @@ export default {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-}
-
-body {
-  margin: 0;
 }
 
 .futuristic-container {
