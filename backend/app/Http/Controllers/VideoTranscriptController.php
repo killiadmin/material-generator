@@ -96,7 +96,8 @@ class VideoTranscriptController extends Controller
             ], 200);
         }
 
-        $analysis = $this->transcriptService->analyzeTranscriptWithOpenRouter($transcript);
+        $cleanedTranscript = $this->transcriptService->cleanTranscript($transcript);
+        $analysis = $this->transcriptService->analyzeTranscriptWithOpenRouter($cleanedTranscript);
 
         return response()->json([
             'video_id' => $videoId,

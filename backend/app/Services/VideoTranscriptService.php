@@ -201,4 +201,23 @@ class VideoTranscriptService implements VideoTranscriptInterface
 
         return false;
     }
+
+    /**
+     * CLeaned transcript from stop words
+     *
+     * @param string $transcript
+     * @return string
+     */
+    public function cleanTranscript(string $transcript): string
+    {
+        $stopWords = config('analyse.stop_words');
+        $text = mb_strtolower($transcript, 'UTF-8');
+        $text = preg_replace('/[^\w\s]/u', ' ', $text);
+        $words = preg_split('/\s+/', $text);
+        $filteredWords = array_diff($words, $stopWords);
+        $cleanedText = implode(' ', $filteredWords);
+        $cleanedText = preg_replace('/\s+/', ' ', $cleanedText);
+
+        return trim($cleanedText);
+    }
 }
