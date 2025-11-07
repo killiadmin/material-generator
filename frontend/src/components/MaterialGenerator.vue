@@ -23,7 +23,7 @@
           <div class="input-wrapper">
             <input
                 ref="youtubeInput"
-                v-model="youtubeUrl"
+                v-model="videoUrl"
                 @focus="animateInput = true"
                 @blur="animateInput = false"
                 @keyup.enter="generateList"
@@ -33,6 +33,22 @@
                 :class="{ 'input-focused': animateInput, 'input-error': error }"
             />
 
+            <div v-if="previewLoading" class="preview-loading">
+              Chargement de la vidéo...
+            </div>
+
+            <div v-if="videoPreview && !previewLoading" class="video-preview">
+              <img
+                  :src="videoPreview['thumbnail']"
+                  alt="Miniature"
+                  class="preview-thumbnail"
+              />
+              <div class="preview-details">
+                <h3 class="preview-title">{{ videoPreview.title }}</h3>
+                <p class="preview-channel">{{ videoPreview['channelTitle'] }}</p>
+              </div>
+            </div>
+
             <div class="input-actions">
               <button
                   @click="pasteFromClipboard"
@@ -41,36 +57,31 @@
                   title="Coller depuis le presse-papier"
               >
                 <template v-if="!pasted">📋</template>
-                <template v-else>✅</template>
               </button>
 
-              <button v-if="youtubeUrl" @click="clearInput" class="icon-button clear-button" title="Effacer le contenu">
+              <button v-if="videoUrl" @click="clearInput" class="icon-button clear-button" title="Effacer le contenu">
                 ❌
               </button>
             </div>
           </div>
 
-          <div v-if="!isValidUrl && youtubeUrl" class="url-warning">
+          <div v-if="!isValidUrl && videoUrl" class="url-warning">
             URL YouTube non valide
           </div>
 
           <div v-if="pasteError" class="paste-error">
             {{ pasteError }}
           </div>
-
-          <div v-if="pasted" class="paste-feedback">
-            Collé depuis le presse-papier !
-          </div>
         </div>
 
 
         <button
             @click="generateList"
-            :disabled="loading || !youtubeUrl || !isValidUrl"
+            :disabled="loading || !videoUrl || !isValidUrl"
             class="magic-button"
             :class="{
             'button-loading': loading,
-            'button-pulse': !loading && youtubeUrl && isValidUrl
+            'button-pulse': !loading && videoUrl && isValidUrl
           }"
         >
           <span class="button-text">
@@ -135,19 +146,22 @@
 
 <script>
 import { urlVideoService } from '@/services/urlVideoService';
+import { videoPreviewService } from '@/services/videoPreviewService';
 import '../styles/MaterialGenerator.css';
 
 export default {
   name: 'App',
   data() {
     return {
-      youtubeUrl: '',
+      videoUrl: '',
       loading: false,
       animateInput: false,
       error: null,
       pasting: false,
       pasted: false,
       pasteError: null,
+      videoPreview: null,
+      previewLoading: false,
       results: {
         materiaux: [],
         outils: [],
@@ -166,7 +180,7 @@ export default {
   computed: {
     isValidUrl() {
       const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/;
-      return youtubeRegex.test(this.youtubeUrl);
+      return youtubeRegex.test(this.videoUrl);
     },
     loadingMessage() {
       return this.loadingStages[this.currentLoadingStage] || 'Traitement en cours...';
@@ -204,7 +218,7 @@ export default {
       }, 800);
 
       try {
-        const response = await urlVideoService.generateList(this.youtubeUrl);
+        const response = await urlVideoService.generateList(this.videoUrl);
 
         if (response.data && response.data['analysis']) {
           this.results = {
@@ -230,7 +244,7 @@ export default {
           this.isTyping = true;
         }, 300);
 
-        this.youtubeUrl = "";
+        this.videoUrl = "";
 
         this.showSuccessMessage('Liste générée avec succès !');
 
@@ -267,7 +281,7 @@ export default {
           return;
         }
 
-        this.youtubeUrl = text;
+        this.videoUrl = text;
         this.pasted = true;
       } catch (err) {
         this.pasteError = err?.message || "Permission refusée ou erreur lors de la lecture.";
@@ -280,7 +294,7 @@ export default {
      *
      */
     clearInput() {
-      this.youtubeUrl = '';
+      this.videoUrl = '';
       this.pasteError = null;
       this.pasted = false;
       this.$nextTick(() => {
@@ -303,9 +317,32 @@ export default {
     showSuccessMessage(message) {
       console.log(message);
     }
+  },
+  watch: {
+    async videoUrl(newUrl) {
+      this.videoPreview = null;
+
+      if (!this.isValidUrl){
+        return;
+      }
+
+      this.previewLoading = true;
+      try {
+        const data = await videoPreviewService.fetchPreview(newUrl);
+
+        if (data && !data['error']) {
+          this.videoPreview = data;
+        } else {
+          this.videoPreview = null;
+        }
+      } catch (e) {
+        this.videoPreview = null;
+      } finally {
+        this.previewLoading = false;
+      }
+    }
   }
 }
-
 </script>
 
 <style scoped>
