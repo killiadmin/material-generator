@@ -22,6 +22,7 @@
         <div class="input-container">
           <div class="input-wrapper">
             <input
+                ref="youtubeInput"
                 v-model="youtubeUrl"
                 @focus="animateInput = true"
                 @blur="animateInput = false"
@@ -31,13 +32,37 @@
                 class="magic-input"
                 :class="{ 'input-focused': animateInput, 'input-error': error }"
             />
-            <div class="input-glow"></div>
-            <div class="input-particles"></div>
+
+            <div class="input-actions">
+              <button
+                  @click="pasteFromClipboard"
+                  class="icon-button"
+                  :disabled="pasting"
+                  title="Coller depuis le presse-papier"
+              >
+                <template v-if="!pasted">📋</template>
+                <template v-else>✅</template>
+              </button>
+
+              <button v-if="youtubeUrl" @click="clearInput" class="icon-button clear-button" title="Effacer le contenu">
+                ❌
+              </button>
+            </div>
           </div>
+
           <div v-if="!isValidUrl && youtubeUrl" class="url-warning">
             URL YouTube non valide
           </div>
+
+          <div v-if="pasteError" class="paste-error">
+            {{ pasteError }}
+          </div>
+
+          <div v-if="pasted" class="paste-feedback">
+            Collé depuis le presse-papier !
+          </div>
         </div>
+
 
         <button
             @click="generateList"
@@ -120,6 +145,9 @@ export default {
       loading: false,
       animateInput: false,
       error: null,
+      pasting: false,
+      pasted: false,
+      pasteError: null,
       results: {
         materiaux: [],
         outils: [],
@@ -149,6 +177,10 @@ export default {
     }
   },
   methods: {
+    /**
+     *
+     * @returns {Promise<void>}
+     */
     async generateList() {
       if (!this.isValidUrl) {
         this.error = "Veuillez entrer une URL YouTube valide";
@@ -211,10 +243,63 @@ export default {
       }
     },
 
+    /**
+     *
+     * @returns {Promise<void>}
+     */
+    async pasteFromClipboard() {
+      this.pasteError = null;
+      this.pasted = false;
+      this.pasting = true;
+
+      if (!navigator.clipboard || !navigator.clipboard.readText) {
+        this.pasteError = "API clipboard non supportée par ce navigateur.";
+        this.pasting = false;
+        return;
+      }
+
+      try {
+        const text = await navigator.clipboard.readText();
+
+        if (!text) {
+          this.pasteError = "Le presse-papier est vide.";
+          this.pasting = false;
+          return;
+        }
+
+        this.youtubeUrl = text;
+        this.pasted = true;
+      } catch (err) {
+        this.pasteError = err?.message || "Permission refusée ou erreur lors de la lecture.";
+      } finally {
+        this.pasting = false;
+      }
+    },
+
+    /**
+     *
+     */
+    clearInput() {
+      this.youtubeUrl = '';
+      this.pasteError = null;
+      this.pasted = false;
+      this.$nextTick(() => {
+        const el = this.$refs.youtubeInput;
+        if (el && el.focus) el.focus();
+      });
+    },
+
+    /**
+     *
+     */
     clearError() {
       this.error = null;
     },
 
+    /**
+     *
+     * @param message
+     */
     showSuccessMessage(message) {
       console.log(message);
     }

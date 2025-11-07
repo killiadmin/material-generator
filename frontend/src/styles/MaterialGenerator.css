@@ -113,7 +113,7 @@
     color: white;
     transition: all 0.3s ease;
     position: relative;
-    z-index: 2;
+    z-index: 1;
 }
 
 .magic-input::placeholder {
@@ -466,6 +466,7 @@
     font-weight: bold;
     font-size: 0.9rem;
     flex-shrink: 0;
+    position: absolute;
 }
 
 .item-text {
@@ -509,3 +510,59 @@
 .result-item:nth-child(6) .typewriter-text { animation-delay: 2.5s; }
 .result-item:nth-child(7) .typewriter-text { animation-delay: 2.9s; }
 .result-item:nth-child(8) .typewriter-text { animation-delay: 3.3s; }
+
+.input-wrapper {
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.magic-input {
+    flex: 1;
+    padding-right: 5rem;
+    box-sizing: border-box;
+}
+
+.input-actions {
+    position: absolute;
+    right: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem; /* espace entre les boutons */
+    z-index: 2;
+}
+
+.icon-button {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 1.1rem;
+    opacity: 0.75;
+    transition: opacity 0.2s ease, transform 0.1s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem;
+}
+
+.icon-button:hover {
+    opacity: 1;
+    transform: scale(1.05);
+}
+
+.icon-button:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.paste-feedback {
+    margin-top: 6px;
+    color: #10b981;
+    font-size: 0.9rem;
+}
+
+.paste-error {
+    margin-top: 6px;
+    color: #ef4444;
+    font-size: 0.9rem;
+}
