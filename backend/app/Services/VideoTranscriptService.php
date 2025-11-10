@@ -114,19 +114,35 @@ class VideoTranscriptService implements VideoTranscriptInterface
      */
     public function analyzeTranscriptWithOpenRouter(string $transcript): array
     {
-        $prompt = "
-            Voici la transcription d'une vidéo de bricolage :
-            \"$transcript\"
+        $prompt = <<<EOT
+            Tu es un expert en bricolage.
+            Voici la transcription complète d'une vidéo de bricolage :
 
-            Analyse le texte et fournis deux listes JSON :
-                - \"materiaux\" : les matériaux nécessaires
-                - \"outils\" : les outils nécessaires
-            Réponds uniquement en JSON au format :
+            ---
+            $transcript
+            ---
+
+            Analyse attentivement le contenu.
+            Ton objectif est d'extraire les informations suivantes :
+
+            1. **Matériaux (materiaux)** : tous les éléments consommables ou assemblables (ex : bois, vis, colle, peinture, planches, clous, ruban adhésif, etc.).
+            2. **Outils (outils)** : tous les instruments nécessaires pour réaliser le projet (ex : tournevis, perceuse, marteau, pince, scie, cutter, règle, etc.).
+
+            Règles importantes :
+            - Déduis les éléments implicites si le texte les suggère (ex : "j'ai percé un trou" → perceuse).
+            - Ne mélange pas outils et matériaux.
+            - N’ajoute pas d’explication ni de texte hors JSON.
+            - Supprime les doublons.
+            - Utilise des noms simples, au singulier.
+            - Réponds uniquement en JSON valide, au format strict suivant :
+
             {
-                \"materiaux\": [...],
-                \"outils\": [...]
+            "materiaux": ["..."],
+            "outils": ["..."]
             }
-        ";
+
+            Si une des listes est vide, retourne une liste vide [].
+            EOT;
 
         $response = Http::withHeaders([
             'Authorization' => 'Bearer ' . env('OPENROUTER_API_KEY'),
@@ -138,7 +154,7 @@ class VideoTranscriptService implements VideoTranscriptInterface
                 ['role' => 'system', 'content' => 'Tu es un assistant spécialisé en bricolage.'],
                 ['role' => 'user', 'content' => $prompt],
             ],
-            'temperature' => 0.3,
+            'temperature' => 0.2,
             'max_tokens' => 500,
         ]);
 

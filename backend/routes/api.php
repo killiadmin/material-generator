@@ -10,7 +10,7 @@ Route::get('/ping', [HealthCheckController::class, 'ping']);
 
 // Video Transcript
 Route::post('/video/transcript', [VideoTranscriptController::class, 'fetchTranscript']);
-Route::post('/video/analyze', [VideoTranscriptController::class, 'analyzeVideo']);
+Route::post('/video/analyze', [VideoTranscriptController::class, 'analyzeVideo'])->middleware('throttle:transcript');
 
 // Video Preview
 Route::post('/video/preview', [VideoPreviewController::class, 'preview']);
