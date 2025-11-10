@@ -74,19 +74,22 @@
           </div>
         </div>
 
-
         <button
             @click="generateList"
-            :disabled="loading || !videoUrl || !isValidUrl"
+            :disabled="loading || !videoUrl || !isValidUrl || (videoPreview && videoPreview['remainingAttempts'] === 0)"
             class="magic-button"
             :class="{
             'button-loading': loading,
-            'button-pulse': !loading && videoUrl && isValidUrl
-          }"
-        >
+            'button-pulse': !loading && videoUrl && isValidUrl && (!videoPreview || videoPreview['remainingAttempts'] > 0)
+            }"
+          >
           <span class="button-text">
             {{ loading ? 'Génération en cours...' : 'Générer la Liste' }}
+              <span v-if="videoPreview && videoPreview['remainingAttempts'] !== undefined">
+                ({{ videoPreview['remainingAttempts'] }})
+              </span>
           </span>
+
           <div class="button-sparkles">
             <div class="sparkle"></div>
             <div class="sparkle"></div>
@@ -94,6 +97,10 @@
           </div>
           <div class="button-glow"></div>
         </button>
+
+        <p v-if="videoPreview && videoPreview['remainingAttempts'] === 0" class="limit-msg">
+          Vous avez atteint la limite. Réessayez demain.
+        </p>
 
         <div v-if="loading" class="loading-container">
           <div class="magic-loader">
