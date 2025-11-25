@@ -13,6 +13,43 @@
         <p class="subtitle">Transformez vos URLs YouTube en listes de matériel</p>
       </div>
 
+      <div class="card futuristic-card test-links-card">
+        <h3 class="test-links-title">Liens YouTube de test</h3>
+        <p class="test-links-subtitle">Copiez l'un de ces liens pour tester l'analyse :</p>
+
+        <ul class="test-links-list">
+          <li>
+            <a href="https://www.youtube.com/watch?v=uDDJqexOjEI" target="_blank"  style="color: white;">
+              Vidéo 1 — Poser du carrelage (uDDJqexOjEI)
+            </a>
+            <button class="copy-btn" @click="copyToClipboardTest('https://www.youtube.com/watch?v=uDDJqexOjEI')">Copier</button>
+          </li>
+
+          <li>
+            <a href="https://www.youtube.com/watch?v=nf2vkB2a1So" target="_blank"  style="color: white;">
+              Vidéo 2 — Peinture & rouleaux (nf2vkB2a1So)
+            </a>
+            <button class="copy-btn" @click="copyToClipboardTest('https://www.youtube.com/watch?v=nf2vkB2a1So')">Copier</button>
+          </li>
+
+          <li>
+            <a href="https://www.youtube.com/watch?v=shFLG5N1eOc" target="_blank"  style="color: white;">
+              Vidéo 3 — Dalle de béton (shFLG5N1eOc)
+            </a>
+            <button class="copy-btn" @click="copyToClipboardTest('https://www.youtube.com/watch?v=shFLG5N1eOc')">Copier</button>
+          </li>
+
+          <li>
+            <a href="https://www.youtube.com/watch?v=GQ6RRfQViGo" target="_blank"  style="color: white;">
+              Vidéo 4 — Monter une cloison de plâtre (GQ6RRfQViGo)
+            </a>
+            <button class="copy-btn" @click="copyToClipboardTest('https://www.youtube.com/watch?v=GQ6RRfQViGo')">Copier</button>
+          </li>
+        </ul>
+
+        <div class="copy-feedback" v-if="copyMessage">{{ copyMessage }}</div>
+      </div>
+
       <div class="card futuristic-card">
         <div v-if="error" class="error-message">
           <div class="error-text">{{ error }}</div>
@@ -85,9 +122,9 @@
           >
           <span class="button-text">
             {{ loading ? 'Génération en cours...' : 'Générer la Liste' }}
-              <span v-if="videoPreview && videoPreview['remainingAttempts'] !== undefined">
-                ({{ videoPreview['remainingAttempts'] }})
-              </span>
+            <!-- <span v-if="videoPreview && videoPreview['remainingAttempts'] !== undefined">-->
+            <!-- ({{ videoPreview['remainingAttempts'] }})-->
+            <!-- </span>-->
           </span>
 
           <div class="button-sparkles">
@@ -184,6 +221,7 @@ export default {
       copySuccess: false,
       copyTimeout: null,
       saveLoading: false,
+      copyMessage: null,
       results: {
         materiaux: [],
         outils: [],
@@ -500,7 +538,20 @@ export default {
      */
     showErrorMessage(message) {
       this.error = message;
-    }
+    },
+
+    /**
+     * Copies the provided text to the clipboard and displays a confirmation message.
+     *
+     * @param {string} text
+     * @return {void}
+     */
+    copyToClipboardTest(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        this.copyMessage = "Lien copié dans le presse-papier ✔️";
+        setTimeout(() => this.copyMessage = null, 2000);
+      });
+    },
   },
   watch: {
 
@@ -537,4 +588,57 @@ export default {
 </script>
 
 <style scoped>
+.test-links-card {
+  margin-bottom: 20px;
+  padding: 20px;
+}
+
+.test-links-title {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: white;
+}
+
+.test-links-subtitle {
+  margin: 6px 0 12px;
+  font-size: 0.95rem;
+  opacity: 0.8;
+  color: white;
+}
+
+.test-links-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.test-links-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.copy-btn {
+  background: linear-gradient(45deg, #ff6b6b, #ff9ff3);
+  font-weight: bold;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: none;
+  color: white;
+  transition: 0.2s;
+}
+
+.copy-btn:hover {
+  background: linear-gradient(45deg, #ff6b6b, #ff9ff3);
+}
+
+.copy-feedback {
+  margin-top: 12px;
+  color: #76ff76;
+  font-size: 0.9rem;
+}
+
 </style>

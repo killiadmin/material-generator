@@ -63,6 +63,12 @@ class VideoTranscriptController extends Controller
         }
 
         $videoId = $this->transcriptService->extractVideoId($url);
+
+        if (app()->environment('production')) {
+            $return = $this->transcriptService->getFakeTranscript($videoId);
+            return response()->json($return);
+        }
+
         $transcriptData = $this->transcriptService->getTranscript($videoId);
         $transcript = $transcriptData['transcript'];
 

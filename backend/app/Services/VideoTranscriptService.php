@@ -69,6 +69,37 @@ class VideoTranscriptService implements VideoTranscriptInterface
     }
 
     /**
+     * Get fake transcript from json file
+     *
+     * @param string $videoId
+     * @return string[]
+     */
+    public function getFakeTranscript (string $videoId) :array {
+        sleep(3);
+
+        $path = storage_path('app/public/data/list.json');
+
+        if (!file_exists($path)) {
+            return ["error" => "Fichier introuvable"];
+        }
+
+        $json = file_get_contents($path);
+        $data = json_decode($json, true);
+
+        if (!is_array($data)) {
+            return ["error" => "JSON invalide"];
+        }
+
+        foreach ($data as $item) {
+            if (isset($item['video_id']) && $item['video_id'] === $videoId) {
+                return $item;
+            }
+        }
+
+        return ["error" => "Aucune donnée trouvée pour cette vidéo"];
+    }
+
+    /**
      * Extractor id video from url
      *
      * @param string $url
